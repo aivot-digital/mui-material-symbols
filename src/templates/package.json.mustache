@@ -1,0 +1,40 @@
+{
+    "name": "@aivot/mui-material-symbols-{{weight}}-{{style}}",
+    "version": "1.0.0",
+    "description": "Material Symbols for Material UI with weight {{weight}} and style {{style}}",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aivot-digital/mui-material-symbols"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "prepare": "npm run build",
+        "build": "tsc",
+        "publish": "npm publish --access public"
+    },
+    "keywords": [
+        "react",
+        "react-component",
+        "mui",
+        "material-ui",
+        "material design",
+        "material icons",
+        "material symbols"
+    ],
+    "author": "Aivot",
+    "license": "MIT",
+    "type": "commonjs",
+    "devDependencies": {
+        "@types/node": "^24.3.1",
+        "typescript": "^5.9.2"
+    },
+    "peerDependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
+        "@mui/material": "^7.3.2"
+    }
+}
