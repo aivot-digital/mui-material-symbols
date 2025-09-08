@@ -1,12 +1,12 @@
 {
-    "name": "@aivot-digital/mui-material-symbols",
-    "version": "1.0.0",
-    "description": "Weight 500 Material Symbol Icons for MUI",
+    "name": "mui-material-symbols",
+    "version": "0.0.0",
+    "description": "Material Symbols builder for MUI",
     "repository": {
         "type": "git",
         "url": "https://github.com/aivot-digital/mui-material-symbols"
     },
-    "main": "index.js",
+    "main": "./src/transform.js",
     "scripts": {
         "transform": "node ./src/transform.js"
     },

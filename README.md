@@ -7,10 +7,10 @@ The icons are pulled from the official [Google Material Design Icons repository]
 
 You need the following tools to build the icons:
 
-- [Node.js](https://nodejs.org/) (version 14 or higher)
+- [Node.js](https://nodejs.org/) (version 24 or higher)
 - [npm](https://www.npmjs.com/) (comes with Node.js)
 - [Git](https://git-scm.com/)
-- Make
+- [Make](https://www.gnu.org/software/make/)
 
 ## Getting Started
 
@@ -20,5 +20,5 @@ You need the following tools to build the icons:
    ```
 2. Run the Makefile:
    ```bash
-   cd mui-material-symbols && make
+   cd mui-material-symbols && make .packages && make build
    ```

@@ -17,6 +17,9 @@ const packageFileTemplate = fs.readFileSync('./src/templates/package.json.mustac
 const tsConfigFileTemplate = fs.readFileSync('./src/templates/tsconfig.json.mustache', {
     encoding: 'utf-8',
 });
+const readmeFileTemplate = fs.readFileSync('./src/templates/README.md.mustache', {
+    encoding: 'utf-8',
+});
 
 /**
  * Find all SVG files in the specified directory and its subdirectories.
@@ -172,6 +175,7 @@ for (const style of data.styles) {
         const indexFileName = `${sourceDir}/index.ts`;
         const packageFileName = `${targetDir}/package.json`;
         const tsConfigName = `${targetDir}/tsconfig.json`;
+        const readmeName = `${targetDir}/README.md`;
 
         const renderedIndexFile = mustache.render(
             indexFileTemplate,
@@ -190,5 +194,11 @@ for (const style of data.styles) {
             { style, weight },
         );
         fs.writeFileSync(tsConfigName, renderedTsconfig);
+
+        const renderedReadme = mustache.render(
+            readmeFileTemplate,
+            { style, weight },
+        );
+        fs.writeFileSync(readmeName, renderedReadme);
     }
 }
