@@ -133,13 +133,19 @@ function writeTemplate(processedFile) {
         recursive: true,
     });
 
-    const originalContent = fs.readFileSync(processedFile.originalPath, {
+    let originalContent = fs.readFileSync(processedFile.originalPath, {
         encoding: 'utf-8',
     });
+
+    originalContent = originalContent
+        .replace(/<svg[^>]*>/, '')
+        .replace('</svg>', '');
 
     const renderedContent = mustache.render(symbolFileTemplate, {
         symbolComponentName: processedFile.filename,
         originalContent: originalContent,
+        fill: processedFile.filled ? 'currentColor' : 'none',
+        stroke: processedFile.filled ? 'none' : 'currentColor',
     });
 
     const targetFile = `${targetFolder}/${processedFile.filename}.tsx`;
