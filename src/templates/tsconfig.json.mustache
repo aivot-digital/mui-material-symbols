@@ -2,13 +2,17 @@
     "compilerOptions": {
         "rootDir": "./src",
         "outDir": "./dist",
-        "moduleResolution": "node",
-        "module": "esnext",
-        "target": "es5",
+        "moduleResolution": "node16",
+        "module": "Node16",
+        "target": "es2019",
         "declaration": true,
+        "incremental": true,
+        "tsBuildInfoFile": "./.tsbuildinfo",
+        "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
         "strict": true,
-        "jsx": "react-jsx",
+        "jsx": "react-jsx"
     },
     "include": ["src"]
 }

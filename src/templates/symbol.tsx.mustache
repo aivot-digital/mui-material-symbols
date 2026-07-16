@@ -1,16 +1,22 @@
 import React from 'react';
-import {createSvgIcon} from '@mui/material';
+import SvgIcon, {type SvgIconProps} from '@mui/material/SvgIcon';
 
-const {{symbolComponentName}} = createSvgIcon(
-    <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 -960 960 960"
-            fill="currentColor"
-            stroke="currentColor"
-    >
+{{! Keep the explicit SvgIcon wrapper for Material Symbols' 960 viewBox, then expose MUI's SvgIcon type for consumer compatibility. }}
+const {{symbolComponentName}}Component = React.forwardRef<SVGSVGElement, SvgIconProps>(function {{symbolComponentName}}(props, ref) {
+    return (
+        <SvgIcon
+                {...props}
+                ref={ref}
+                viewBox="0 -960 960 960"
+        >
         {{{originalContent}}}
-    </svg>,
-    '{{symbolComponentName}}'
-);
+        </SvgIcon>
+    );
+});
+
+{{symbolComponentName}}Component.displayName = '{{symbolComponentName}}';
+
+const {{symbolComponentName}} = {{symbolComponentName}}Component as unknown as typeof SvgIcon;
+{{symbolComponentName}}.muiName = SvgIcon.muiName;
 
 export default {{symbolComponentName}};
