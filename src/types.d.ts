@@ -4,6 +4,7 @@ interface ProcessedFile {
     nameRaw: string;
     style: 'outlined' | 'rounded' | 'sharp';
     weight: number;
+    grade: number;
     filled: boolean;
     filename: string | null;
 }

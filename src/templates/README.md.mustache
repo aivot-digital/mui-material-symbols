@@ -1,10 +1,11 @@
-# MUI Material Symbols {{weight}} {{style}}
+# @aivot/{{packageName}}
 
 This package contains [Material Symbols](https://fonts.google.com/icons) as
 Material UI `SvgIcon` components.
 
 - Style: `{{style}}`
 - Weight: `{{weight}}`
+- Grade: `{{grade}}`
 - Source: [MUI Material Symbols](https://github.com/aivot-digital/mui-material-symbols)
 
 ## Getting Started
@@ -12,7 +13,7 @@ Material UI `SvgIcon` components.
 Install this package in a project that already uses React and Material UI:
 
 ```bash
-npm install @aivot/mui-material-symbols-{{weight}}-{{style}}
+npm install @aivot/{{packageName}}
 ```
 
 ## Usage
@@ -20,8 +21,8 @@ npm install @aivot/mui-material-symbols-{{weight}}-{{style}}
 Use direct imports:
 
 ```tsx
-import Spa from '@aivot/mui-material-symbols-{{weight}}-{{style}}/Spa';
-import SpaFilled from '@aivot/mui-material-symbols-{{weight}}-{{style}}/SpaFilled';
+import Spa from '@aivot/{{packageName}}/Spa';
+import SpaFilled from '@aivot/{{packageName}}/SpaFilled';
 
 function MyComponent() {
   return (
@@ -52,5 +53,5 @@ The component names are derived from the official Material Symbols slugs. They
 do not include an `Icon` suffix, but you may choose one locally:
 
 ```tsx
-import SpaIcon from '@aivot/mui-material-symbols-{{weight}}-{{style}}/Spa';
+import SpaIcon from '@aivot/{{packageName}}/Spa';
 ```

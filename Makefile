@@ -7,8 +7,9 @@ SOURCE_DIR ?= .icons
 ICONS ?=
 STYLES ?=
 WEIGHTS ?=
+GRADES ?=
 FILLS ?=
-TRANSFORM_FILTER_ARGS = $(if $(ICONS),--icons $(ICONS)) $(if $(STYLES),--styles $(STYLES)) $(if $(WEIGHTS),--weights $(WEIGHTS)) $(if $(FILLS),--fills $(FILLS))
+TRANSFORM_FILTER_ARGS = $(if $(ICONS),--icons $(ICONS)) $(if $(STYLES),--styles $(STYLES)) $(if $(WEIGHTS),--weights $(WEIGHTS)) $(if $(GRADES),--grades $(GRADES)) $(if $(FILLS),--fills $(FILLS))
 TRANSFORM_ARGS ?= $(TRANSFORM_FILTER_ARGS)
 
 .PHONY: icons packages .packages build all clean-icons clean-packages clean

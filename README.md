@@ -51,6 +51,7 @@ make build \
   ICONS=home,spa \
   STYLES=outlined \
   WEIGHTS=400 \
+  GRADES=0 \
   FILLS=0,1
 ```
 
@@ -79,6 +80,7 @@ can still choose a local import name such as `SpaIcon` in application code.
 - `ICONS`: comma-separated Material Symbols slugs, e.g. `home,spa`.
 - `STYLES`: comma-separated styles: `outlined`, `rounded`, `sharp`.
 - `WEIGHTS`: comma-separated weights: `100,200,300,400,500,600,700`.
+- `GRADES`: comma-separated grades: `0,-25,200`. Default: `0`.
 - `FILLS`: comma-separated fills: `0,1`.
 
 You can also pass raw transform arguments through `TRANSFORM_ARGS`, but the
@@ -86,12 +88,16 @@ dedicated Make variables are easier to read and less error-prone.
 
 ## Generated Package Shape
 
-Each generated package contains one style and one weight. Filled variants are
-separate components in the same package.
+Each generated package contains one style, one weight, and one grade. Grade `0`
+keeps the package name unchanged; non-default grades add a grade segment.
+Filled variants are separate components in the same package.
+Negative grades use an `n` prefix and positive grades use a `p` prefix.
 
 ```text
 @aivot/mui-material-symbols-400-outlined/Spa
 @aivot/mui-material-symbols-400-outlined/SpaFilled
+@aivot/mui-material-symbols-400-n25-outlined/Spa
+@aivot/mui-material-symbols-400-p200-outlined/Spa
 ```
 
 Each icon is exported with the same public component type as Material UI's

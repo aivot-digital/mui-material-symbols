@@ -29,12 +29,13 @@ Options:
   --icons-file <file>  File with symbol slugs separated by newlines or commas
   --styles <list>      Comma-separated styles: outlined,rounded,sharp
   --weights <list>     Comma-separated weights: 100,200,300,400,500,600,700
+  --grades <list>      Comma-separated grades: 0,-25,200. Default: 0
   --fills <list>       Comma-separated fills: 0,1 or false,true. Default: 0,1
   --help               Show this help
 
 Examples:
   npm run transform -- .packages
-  npm run transform -- .packages-test --icons home,spa --styles outlined --weights 400 --fills 0,1
+  npm run transform -- .packages-test --icons home,spa --styles outlined --weights 400 --grades -25 --fills 0,1
 `);
 }
 
@@ -62,6 +63,7 @@ function parseArgs(argv) {
         icons: null,
         styles: new Set(data.styles),
         weights: new Set(data.weights),
+        grades: new Set([0]),
         fills: new Set([false, true]),
     };
 
@@ -112,6 +114,9 @@ function parseArgs(argv) {
             case '--weights':
                 options.weights = new Set(parseList(value).map((weight) => parseInt(weight, 10)));
                 break;
+            case '--grades':
+                options.grades = new Set(parseList(value).map(parseGrade));
+                break;
             case '--fills':
                 options.fills = new Set(parseList(value).map(parseFill));
                 break;
@@ -127,6 +132,28 @@ function parseArgs(argv) {
     validateOptions(options);
 
     return options;
+}
+
+function parseGrade(value) {
+    const normalizedValue = value.toLowerCase().replace(/^grad/, '');
+
+    if (normalizedValue === '0' || normalizedValue === 'default') {
+        return 0;
+    }
+
+    if (/^-?\d+$/.test(normalizedValue)) {
+        return parseInt(normalizedValue, 10);
+    }
+
+    if (/^n\d+$/.test(normalizedValue)) {
+        return -parseInt(normalizedValue.slice(1), 10);
+    }
+
+    if (/^p\d+$/.test(normalizedValue)) {
+        return parseInt(normalizedValue.slice(1), 10);
+    }
+
+    throw new Error(`Unsupported grade value: ${value}`);
 }
 
 function parseFill(value) {
@@ -157,6 +184,16 @@ function validateOptions(options) {
         if (!data.weights.includes(weight)) {
             throw new Error(`Unsupported weight: ${weight}. Expected one of: ${data.weights.join(', ')}`);
         }
+    }
+
+    for (const grade of options.grades) {
+        if (!data.grades.includes(grade)) {
+            throw new Error(`Unsupported grade: ${formatGrade(grade)}. Expected one of: ${data.grades.map(formatGrade).join(', ')}`);
+        }
+    }
+
+    if (options.grades.size === 0) {
+        throw new Error('At least one grade value must be selected.');
     }
 
     if (options.fills.size === 0) {
@@ -217,20 +254,15 @@ function getSelectedStyleDirs(options) {
 }
 
 function isSelectedSvgFile(fileName, options) {
-    if (!fileName.endsWith('_24px.svg') || hasGradeAxis(fileName)) {
+    if (!fileName.endsWith('_24px.svg')) {
         return false;
     }
 
     const weight = getWeightFromFileName(fileName);
+    const grade = getGradeFromFileName(fileName);
     const filled = isFilledFileName(fileName);
 
-    return options.weights.has(weight) && options.fills.has(filled);
-}
-
-function hasGradeAxis(fileName) {
-    // Google encodes the grade axis as `grad200` or `gradN25`. A broad
-    // `includes("grad")` would incorrectly drop regular symbols like `grade`.
-    return /grad(?:N?\d+)/.test(fileName);
+    return options.weights.has(weight) && options.grades.has(grade) && options.fills.has(filled);
 }
 
 /**
@@ -259,13 +291,14 @@ function prepareFiles(files, options) {
         }
 
         const weight = getWeightFromFileName(baseName);
+        const grade = getGradeFromFileName(baseName);
         const filled = isFilledFileName(baseName);
 
         if (options.icons != null && !options.icons.has(nameRaw)) {
             continue;
         }
 
-        if (!options.styles.has(style) || !options.weights.has(weight) || !options.fills.has(filled)) {
+        if (!options.styles.has(style) || !options.weights.has(weight) || !options.grades.has(grade) || !options.fills.has(filled)) {
             continue;
         }
 
@@ -275,6 +308,7 @@ function prepareFiles(files, options) {
             nameRaw: nameRaw,
             style: style,
             weight: weight,
+            grade: grade,
             filled: filled,
             filename: null,
         });
@@ -289,6 +323,16 @@ function getWeightFromFileName(fileName) {
     const weightMatch = fileName.match(/wght(\d+)/);
 
     return weightMatch ? parseInt(weightMatch[1], 10) : 400;
+}
+
+function getGradeFromFileName(fileName) {
+    const gradeMatch = fileName.match(/grad(N?\d+)/);
+
+    if (gradeMatch == null) {
+        return 0;
+    }
+
+    return parseGrade(gradeMatch[1]);
 }
 
 function isFilledFileName(fileName) {
@@ -322,7 +366,7 @@ function assignComponentFilenames(processedFiles) {
     const filesByPackage = new Map();
 
     for (const file of processedFiles) {
-        const key = getPackageKey(file.style, file.weight);
+        const key = getPackageKey(file.style, file.weight, file.grade);
 
         if (!filesByPackage.has(key)) {
             filesByPackage.set(key, []);
@@ -358,7 +402,7 @@ function assignComponentFilenames(processedFiles) {
     }
 
     processedFiles.sort((a, b) => {
-        const packageCompare = getPackageKey(a.style, a.weight).localeCompare(getPackageKey(b.style, b.weight));
+        const packageCompare = getPackageKey(a.style, a.weight, a.grade).localeCompare(getPackageKey(b.style, b.weight, b.grade));
 
         if (packageCompare !== 0) {
             return packageCompare;
@@ -427,12 +471,38 @@ function numberUnderOneHundredToWords(number) {
     ];
 }
 
-function getPackageKey(style, weight) {
-    return `${style}-${weight}`;
+function getPackageKey(style, weight, grade) {
+    return `${style}|${weight}|${grade}`;
 }
 
-function getTargetDir(packagesDir, style, weight) {
-    return `${packagesDir}/mui-material-symbols-${weight}-${style}`;
+function getPackageName(weight, grade, style) {
+    return `mui-material-symbols-${weight}${getGradePackageSegment(grade)}-${style}`;
+}
+
+function getGradePackageSegment(grade) {
+    if (grade === 0) {
+        return '';
+    }
+
+    return grade < 0
+        ? `-n${Math.abs(grade)}`
+        : `-p${grade}`;
+}
+
+function parseGradePackageSegment(segment) {
+    if (segment == null) {
+        return 0;
+    }
+
+    return parseGrade(segment);
+}
+
+function formatGrade(grade) {
+    return grade > 0 ? `+${grade}` : `${grade}`;
+}
+
+function getTargetDir(packagesDir, style, weight, grade) {
+    return `${packagesDir}/${getPackageName(weight, grade, style)}`;
 }
 
 /**
@@ -442,7 +512,7 @@ function getTargetDir(packagesDir, style, weight) {
  * @returns {void}
  */
 function writeTemplate(processedFile, packagesDir) {
-    const targetFolder = `${getTargetDir(packagesDir, processedFile.style, processedFile.weight)}/src`;
+    const targetFolder = `${getTargetDir(packagesDir, processedFile.style, processedFile.weight, processedFile.grade)}/src`;
     fs.mkdirSync(targetFolder, {
         recursive: true,
     });
@@ -469,7 +539,7 @@ function writePackageFiles(preparedFiles, options) {
     const filesByPackage = new Map();
 
     for (const processedFile of preparedFiles) {
-        const key = getPackageKey(processedFile.style, processedFile.weight);
+        const key = getPackageKey(processedFile.style, processedFile.weight, processedFile.grade);
 
         if (!filesByPackage.has(key)) {
             filesByPackage.set(key, []);
@@ -484,9 +554,11 @@ function writePackageFiles(preparedFiles, options) {
     removeStalePackageDirs(options.packagesDir, new Set(filesByPackage.keys()));
 
     for (const [packageKey, files] of filesByPackage) {
-        const [style, weightRaw] = packageKey.split('-');
+        const [style, weightRaw, gradeRaw] = packageKey.split('|');
         const weight = parseInt(weightRaw, 10);
-        const targetDir = getTargetDir(options.packagesDir, style, weight);
+        const grade = parseInt(gradeRaw, 10);
+        const packageName = getPackageName(weight, grade, style);
+        const targetDir = getTargetDir(options.packagesDir, style, weight, grade);
         const sourceDir = `${targetDir}/src`;
         const distDir = `${targetDir}/dist`;
 
@@ -506,19 +578,19 @@ function writePackageFiles(preparedFiles, options) {
 
         const renderedPackageFile = mustache.render(
             packageFileTemplate,
-            {style, weight},
+            {style, weight, grade: formatGrade(grade), packageName},
         );
         writeFileIfChanged(`${targetDir}/package.json`, renderedPackageFile);
 
         const renderedTsconfig = mustache.render(
             tsConfigFileTemplate,
-            {style, weight},
+            {style, weight, grade: formatGrade(grade), packageName},
         );
         writeFileIfChanged(`${targetDir}/tsconfig.json`, renderedTsconfig);
 
         const renderedReadme = mustache.render(
             readmeFileTemplate,
-            {style, weight},
+            {style, weight, grade: formatGrade(grade), packageName},
         );
         writeFileIfChanged(`${targetDir}/README.md`, renderedReadme);
     }
@@ -530,7 +602,7 @@ function removeStalePackageDirs(packagesDir, activePackageKeys) {
     }
 
     for (const dirName of fs.readdirSync(packagesDir)) {
-        const currentNameMatch = dirName.match(/^mui-material-symbols-(\d+)-(outlined|rounded|sharp)$/);
+        const currentNameMatch = dirName.match(/^mui-material-symbols-(\d+)(?:-([np]\d+))?-(outlined|rounded|sharp)$/);
         const legacyNameMatch = dirName.match(/^mui-symbols-(outlined|rounded|sharp)-(\d+)$/);
 
         if (currentNameMatch == null && legacyNameMatch == null) {
@@ -538,8 +610,8 @@ function removeStalePackageDirs(packagesDir, activePackageKeys) {
         }
 
         const packageKey = currentNameMatch != null
-            ? `${currentNameMatch[2]}-${currentNameMatch[1]}`
-            : `${legacyNameMatch[1]}-${legacyNameMatch[2]}`;
+            ? getPackageKey(currentNameMatch[3], parseInt(currentNameMatch[1], 10), parseGradePackageSegment(currentNameMatch[2]))
+            : getPackageKey(legacyNameMatch[1], parseInt(legacyNameMatch[2], 10), 0);
 
         if (legacyNameMatch != null || !activePackageKeys.has(packageKey)) {
             fs.rmSync(path.join(packagesDir, dirName), {
@@ -637,7 +709,7 @@ function main() {
         writeProgress(counter, preparedFiles.length);
     }
 
-    const packageCount = new Set(preparedFiles.map((file) => getPackageKey(file.style, file.weight))).size;
+    const packageCount = new Set(preparedFiles.map((file) => getPackageKey(file.style, file.weight, file.grade))).size;
     process.stdout.write(`Wrote ${preparedFiles.length} symbols into ${packageCount} package(s).\n`);
 }
 

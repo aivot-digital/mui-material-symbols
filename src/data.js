@@ -7,6 +7,7 @@ const styleNames = {
 const styles = Object.values(styleNames);
 
 const weights = [100, 200, 300, 400, 500, 600, 700];
+const grades = [0, -25, 200];
 
 const numberToWordMap = {
     0: 'zero',
@@ -44,5 +45,6 @@ module.exports = {
     styleNames,
     styles,
     weights,
+    grades,
     numberToWordMap,
 };
