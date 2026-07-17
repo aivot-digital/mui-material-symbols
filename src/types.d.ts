@@ -1,9 +1,10 @@
 interface ProcessedFile {
     originalPath: string;
-    kebabCaseName: string;
     pascalCaseName: string;
+    nameRaw: string;
     style: 'outlined' | 'rounded' | 'sharp';
     weight: number;
+    grade: number;
     filled: boolean;
-    filename: string;
+    filename: string | null;
 }
