@@ -6,6 +6,12 @@ const styleNames = {
 
 const styles = Object.values(styleNames);
 
+const symbolFamilyNames = {
+    outlined: 'Material Symbols Outlined',
+    rounded: 'Material Symbols Rounded',
+    sharp: 'Material Symbols Sharp',
+};
+
 const weights = [100, 200, 300, 400, 500, 600, 700];
 const grades = [0, -25, 200];
 
@@ -44,6 +50,7 @@ const numberToWordMap = {
 module.exports = {
     styleNames,
     styles,
+    symbolFamilyNames,
     weights,
     grades,
     numberToWordMap,

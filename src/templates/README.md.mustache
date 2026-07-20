@@ -43,6 +43,10 @@ The components accept the normal Material UI `SvgIcon` props:
 Each icon exports the same public component type as Material UI's `SvgIcon`, so
 it can be used where a MUI icon component is expected.
 
+Only symbol slugs supported by the Google Fonts Material Symbols metadata are
+included. Older aliases that are still present in Google's source repository may
+therefore be omitted when they are no longer official Material Symbols names.
+
 Root imports are intentionally not exposed. Use direct icon imports so bundlers
 only load the symbols you reference.
 

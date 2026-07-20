@@ -25,6 +25,7 @@ function printHelp() {
 
 Options:
   --source <dir>       Material Design Icons checkout. Default: .icons
+  --metadata <file>    Google Fonts Material Symbols metadata. Default: .metadata/material-symbols.json
   --icons <list>       Comma-separated official symbol slugs, e.g. home,spa
   --icons-file <file>  File with symbol slugs separated by newlines or commas
   --styles <list>      Comma-separated styles: outlined,rounded,sharp
@@ -35,7 +36,7 @@ Options:
 
 Examples:
   npm run transform -- .packages
-  npm run transform -- .packages-test --icons home,spa --styles outlined --weights 400 --grades -25 --fills 0,1
+  npm run transform -- .packages-test --metadata .metadata/material-symbols.json --icons home,spa --styles outlined --weights 400 --grades -25 --fills 0,1
 `);
 }
 
@@ -60,6 +61,7 @@ function parseArgs(argv) {
     const options = {
         packagesDir: null,
         sourceDir: '.icons',
+        metadataFile: '.metadata/material-symbols.json',
         icons: null,
         styles: new Set(data.styles),
         weights: new Set(data.weights),
@@ -95,6 +97,9 @@ function parseArgs(argv) {
         switch (optionName) {
             case '--source':
                 options.sourceDir = value;
+                break;
+            case '--metadata':
+                options.metadataFile = value;
                 break;
             case '--icons':
                 options.icons = new Set(parseList(value));
@@ -132,6 +137,57 @@ function parseArgs(argv) {
     validateOptions(options);
 
     return options;
+}
+
+function loadSupportedIconsByStyle(metadataFile) {
+    if (!fs.existsSync(metadataFile)) {
+        throw new Error(`Material Symbols metadata file not found: ${metadataFile}. Run "make metadata" or pass --metadata <file>.`);
+    }
+
+    const rawContent = fs.readFileSync(metadataFile, {
+        encoding: 'utf-8',
+    });
+
+    let metadata;
+
+    try {
+        metadata = JSON.parse(stripJsonPrefix(rawContent));
+    } catch (error) {
+        throw new Error(`Could not parse Material Symbols metadata file: ${metadataFile}. ${error.message}`);
+    }
+
+    if (!Array.isArray(metadata.icons)) {
+        throw new Error(`Material Symbols metadata file has no icons array: ${metadataFile}`);
+    }
+
+    const supportedIconsByStyle = new Map(
+        data.styles.map((style) => [style, new Set()]),
+    );
+
+    for (const icon of metadata.icons) {
+        if (icon == null || typeof icon.name !== 'string') {
+            continue;
+        }
+
+        const unsupportedFamilies = new Set(
+            Array.isArray(icon.unsupported_families) ? icon.unsupported_families : [],
+        );
+
+        // Google keeps older aliases in the repository and codepoint files.
+        // The metadata endpoint is the source that tells us whether a slug is
+        // actually supported by the current Material Symbols family.
+        for (const [style, familyName] of Object.entries(data.symbolFamilyNames)) {
+            if (!unsupportedFamilies.has(familyName)) {
+                supportedIconsByStyle.get(style).add(icon.name);
+            }
+        }
+    }
+
+    return supportedIconsByStyle;
+}
+
+function stripJsonPrefix(content) {
+    return content.replace(/^\)\]\}'\s*/, '');
 }
 
 function parseGrade(value) {
@@ -229,6 +285,12 @@ function findFilesForSelectedIcons(options, styleDirs) {
 
     for (const icon of [...options.icons].sort()) {
         for (const styleDir of styleDirs) {
+            const style = data.styleNames[styleDir];
+
+            if (!isSupportedIconForStyle(options, icon, style)) {
+                continue;
+            }
+
             const iconStyleDir = path.join(options.sourceDir, 'symbols', 'web', icon, styleDir);
 
             if (!fs.existsSync(iconStyleDir)) {
@@ -290,6 +352,10 @@ function prepareFiles(files, options) {
             continue;
         }
 
+        if (!isSupportedIconForStyle(options, nameRaw, style)) {
+            continue;
+        }
+
         const weight = getWeightFromFileName(baseName);
         const grade = getGradeFromFileName(baseName);
         const filled = isFilledFileName(baseName);
@@ -317,6 +383,42 @@ function prepareFiles(files, options) {
     assignComponentFilenames(processedFiles);
 
     return processedFiles;
+}
+
+function isSupportedIconForStyle(options, iconName, style) {
+    if (style == null) {
+        return false;
+    }
+
+    const supportedIcons = options.supportedIconsByStyle.get(style);
+
+    return supportedIcons != null && supportedIcons.has(iconName);
+}
+
+function getUnsupportedSelectedIconStyles(options) {
+    if (options.icons == null) {
+        return [];
+    }
+
+    const unsupported = [];
+
+    for (const icon of [...options.icons].sort()) {
+        for (const style of [...options.styles].sort()) {
+            if (!isSupportedIconForStyle(options, icon, style)) {
+                unsupported.push(`${icon}/${style}`);
+            }
+        }
+    }
+
+    return unsupported;
+}
+
+function formatLimitedList(items, limit) {
+    if (items.length <= limit) {
+        return items.join(', ');
+    }
+
+    return `${items.slice(0, limit).join(', ')} and ${items.length - limit} more`;
 }
 
 function getWeightFromFileName(fileName) {
@@ -686,6 +788,7 @@ function main() {
     let files;
 
     try {
+        options.supportedIconsByStyle = loadSupportedIconsByStyle(options.metadataFile);
         files = findFiles(options);
     } catch (error) {
         process.stderr.write(`${error.message}\n`);
@@ -693,10 +796,19 @@ function main() {
     }
 
     const preparedFiles = prepareFiles(files, options);
+    const unsupportedSelectedIconStyles = getUnsupportedSelectedIconStyles(options);
 
     if (preparedFiles.length === 0) {
-        process.stderr.write('No matching symbol files found.\n');
+        if (unsupportedSelectedIconStyles.length > 0) {
+            process.stderr.write(`No matching symbol files found. Unsupported by Google Fonts metadata: ${formatLimitedList(unsupportedSelectedIconStyles, 10)}.\n`);
+        } else {
+            process.stderr.write('No matching symbol files found.\n');
+        }
         process.exit(1);
+    }
+
+    if (unsupportedSelectedIconStyles.length > 0) {
+        process.stderr.write(`Skipped ${unsupportedSelectedIconStyles.length} icon/style combination(s) unsupported by Google Fonts metadata: ${formatLimitedList(unsupportedSelectedIconStyles, 10)}.\n`);
     }
 
     writePackageFiles(preparedFiles, options);

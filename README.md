@@ -16,6 +16,7 @@ repository.
 - npm
 - Git
 - Make
+- curl
 
 ## Build
 
@@ -31,15 +32,24 @@ Build the default package set:
 make build
 ```
 
-The build has three stages:
+The build has four stages:
 
 1. `make icons` creates `.icons` as a shallow clone of Google's repository.
-2. `npm run transform` generates package folders below `PACKAGES_DIR`.
-3. `make build` installs and runs `tsc` inside each generated package.
+2. `make metadata` downloads the Google Fonts Material Symbols metadata.
+3. `npm run transform` generates package folders below `PACKAGES_DIR`.
+4. `make build` installs and runs `tsc` inside each generated package.
 
 The first checkout can take a while because Google's icon repository is large.
 Keep `.icons` around between builds and avoid `make clean-icons` unless you need
-a fresh source checkout.
+a fresh source checkout. Keep `.metadata` around for normal rebuilds; use
+`make clean-metadata` when you intentionally want to refresh Google's metadata
+cache.
+
+The generator uses the SVG checkout for path data and the Google Fonts metadata
+to decide which symbol slugs are officially supported for each Material Symbols
+style. Legacy aliases that still exist in the source repository, such as
+`file_download`, are skipped when the metadata marks them as unsupported for
+Material Symbols.
 
 ## Build a Test Subset
 
@@ -77,6 +87,9 @@ can still choose a local import name such as `SpaIcon` in application code.
 
 - `PACKAGES_DIR`: output directory for generated packages. Default: `.packages`.
 - `SOURCE_DIR`: source checkout directory. Default: `.icons`.
+- `METADATA_DIR`: metadata cache directory. Default: `.metadata`.
+- `METADATA_FILE`: downloaded Google Fonts metadata file. Default:
+  `.metadata/material-symbols.json`.
 - `ICONS`: comma-separated Material Symbols slugs, e.g. `home,spa`.
 - `STYLES`: comma-separated styles: `outlined`, `rounded`, `sharp`.
 - `WEIGHTS`: comma-separated weights: `100,200,300,400,500,600,700`.
@@ -85,6 +98,20 @@ can still choose a local import name such as `SpaIcon` in application code.
 
 You can also pass raw transform arguments through `TRANSFORM_ARGS`, but the
 dedicated Make variables are easier to read and less error-prone.
+
+When running the transform script without Make, pass the source checkout and
+metadata file explicitly if you do not use the defaults:
+
+```bash
+npm run transform -- .packages-test \
+  --source .icons \
+  --metadata .metadata/material-symbols.json \
+  --icons home,spa \
+  --styles outlined \
+  --weights 400 \
+  --grades 0 \
+  --fills 0,1
+```
 
 ## Generated Package Shape
 
